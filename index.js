@@ -9,6 +9,10 @@ async function startBot() {
 
     sock.ev.on("creds.update", saveCreds)
 
+    // anti-spam simples
+    const cooldown = new Map()
+    let lastMsg = {}
+
     sock.ev.on("messages.upsert", async ({ messages }) => {
         const msg = messages[0]
         if (!msg.message) return
@@ -18,7 +22,19 @@ async function startBot() {
 
         if (!text) return
 
+        // evita repetição de mensagem igual
+        if (lastMsg[from] === text) return
+        lastMsg[from] = text
+
+        // cooldown (5 segundos por chat)
+        if (cooldown.get(from)) return
+        cooldown.set(from, true)
+        setTimeout(() => cooldown.delete(from), 5000)
+
+        // comando !numero
         if (text === "!numero") {
+            await new Promise(r => setTimeout(r, 1000)) // delay humano
+
             const numero = Math.floor(Math.random() * 100) + 1
             await sock.sendMessage(from, { text: "🔢 Número: " + numero })
         }
